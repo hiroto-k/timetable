@@ -62,7 +62,7 @@ export class ClassEditPage extends HTMLElement {
   <div class="class-edit">
       <div class="header">
         <button class="move-list">⬅️</button>
-        <span>class edit page</span>
+        <span>科目選択</span>
         <button class="save">💾</button>
       </div>
       <div class="input-container">

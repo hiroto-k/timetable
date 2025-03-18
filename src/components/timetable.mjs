@@ -1,8 +1,22 @@
+import { DB, CLASS_STORE_NAME, TABLE_STORE_NAME } from "../shared/db.mjs";
 import { basicStyle } from "../shared/style.mjs";
 
 export class TimetableComponent extends HTMLElement {
   /** @type {ShadowRoot | undefined} */
   shadowRoot = undefined;
+  /** @type {import("../types.mjs").ClassData[]} */
+  classDatas = [];
+  /** @type {import("../types.mjs").TableData[]} */
+  tableDatas = [];
+  static observedAttributes = ["render-id"];
+  get renderId() {
+    return this.getAttribute("render-id");
+  }
+
+  classDataDayPeriod = (dayperiod) => {
+    const id = this.tableDatas.find((tabledata) => tabledata.dayperiod === dayperiod)?.classId;
+    return this.classDatas.find((classData) => classData.id === id);
+  };
 
   css = () => /* css */ `
     ${basicStyle}
@@ -39,8 +53,8 @@ export class TimetableComponent extends HTMLElement {
                 </div>
               `
                 : /* html */ `
-                <div class="class-item">
-                  <span>${day}${period}</span>
+                <div class="class-item" dayperiod="${`${day}-${period}`}" >
+                  <span>${this.classDataDayPeriod(`${day}-${period}`)?.name || "空き"}</span>
                 </div>
               `
             )
@@ -55,11 +69,30 @@ export class TimetableComponent extends HTMLElement {
     this.shadowRoot = this.attachShadow({ mode: "open" });
   }
 
-  connectedCallback() {
+  async connectedCallback() {
+    this.classDatas = await DB.getAll(CLASS_STORE_NAME);
+    this.tableDatas = await DB.getAll(TABLE_STORE_NAME);
     this.render();
+  }
+  async attributeChangedCallback(name, oldValue, newValue) {
+    if ((name = "render-id")) {
+      this.render();
+    }
   }
 
   render() {
     this.shadowRoot.innerHTML = this.html();
+
+    this.shadowRoot.querySelectorAll("div.class-item").forEach((elem) => {
+      elem.addEventListener("click", () => {
+        this.dispatchEvent(
+          new CustomEvent("tableItemClick", {
+            bubbles: true,
+            composed: true,
+            detail: elem.getAttribute("dayperiod"),
+          })
+        );
+      });
+    });
   }
 }
