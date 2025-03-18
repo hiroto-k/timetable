@@ -4,6 +4,9 @@ import { basicStyle } from "../shared/style.mjs";
 export class ClassEditPage extends HTMLElement {
   /** @type {ShadowRoot | undefined} */
   shadowRoot = undefined;
+  classId = new URLSearchParams(window.location.search).get("classId") || crypto.randomUUID();
+  /** @type {import("../types.mjs").ClassData} */
+  classData = undefined;
   css = () => /* css */ `
   ${basicStyle}
 
@@ -64,7 +67,7 @@ export class ClassEditPage extends HTMLElement {
       </div>
       <div class="input-container">
         <span>科目名</span>
-        <input type="text" id="class-name"/>
+        <input type="text" id="class-name" value="${this.classData?.name ?? ""}"/>
       </div>
     </div>
   `;
@@ -74,7 +77,9 @@ export class ClassEditPage extends HTMLElement {
     this.shadowRoot = this.attachShadow({ mode: "open" });
   }
 
-  connectedCallback() {
+  async connectedCallback() {
+    this.classData = await DB.get(CLASS_STORE_NAME, this.classId);
+
     this.render();
   }
 
@@ -86,11 +91,10 @@ export class ClassEditPage extends HTMLElement {
       const className = /** @type {HTMLInputElement} */ (
         this.shadowRoot.getElementById("class-name")
       ).value;
-      const classId = crypto.randomUUID();
 
       /** @type {import("../types.mjs").ClassData} */
       const data = {
-        id: classId,
+        id: this.classId,
         name: className,
       };
       await DB.set(CLASS_STORE_NAME, data);
@@ -105,6 +109,7 @@ export class ClassEditPage extends HTMLElement {
   moveToList() {
     const url = new URL(location.href);
     url.hash = "#class-list";
+    url.search = "";
     location.href = url.href;
   }
 }
